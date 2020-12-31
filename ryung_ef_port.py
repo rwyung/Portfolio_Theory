@@ -6,7 +6,9 @@ import numpy as np
 import csv
 import time
 from scipy import stats
-
+from finance_help import EMVmodel, EMVmodelplot, CMLplot, checkdata
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 # The Portfolio Optimizer Function attempts to return a .json or python dictionary
 # that pertains to the weigthings to certain assets assuming provided there exists a solution.
 
@@ -69,7 +71,10 @@ class Portfolio:
         self.beta = beta
         self.historical = extract_data(self.equities)
         self.indicators = get_indicators(self.historical,self.equities)    
-        self.covariance_matrix_df(self.indicators)  
+        self.covariance_matrix_df = covariance_matrix(self.indicators)  
+        self.expected_returns = None
+        self.portfolio_variance = self.indicators.var()
+        self.EMV_components = None
     #def print(self,i):
     def description(self):
         return f"{self.name} is holding with {self.notional} notional which has a {self.sharp_ratio} sharp ratio."
@@ -118,9 +123,10 @@ class Portfolio:
             mean_return = temp.mean()
             annualized = mean_return.apply(lambda x: x + 1)
             annualized = annualized.apply(lambda x: x**365)
-            annualized = annualized.apply(lambda x: x - 1)
-            self.expected_returns = annualized
+            #annualized = annualized.apply(lambda x: x - 1)
+            self.expected_returns = annualized.to_numpy()            
             return(self.expected_returns)
+            
         elif method == "geometric":
             #Only works for periods where all equities 
             temp = extract_data(self.equities)
@@ -129,7 +135,7 @@ class Portfolio:
             temp = temp + 1
             mean_return = stats.mstats.gmean(temp,axis=0)
             #mean_return = mean_return - 1
-            mean_return = (mean_return ** 365) - 1
+            mean_return = (mean_return ** 365)
             self.expected_returns = mean_return
             return(self.expected_returns)
             
@@ -142,13 +148,56 @@ class Portfolio:
         else:
             pass
 
+    def get_EMV_components(self):
+        
+        if self.expected_returns is None:
+            self.expected_return(method="geometric")
+            #("print Please run Portfolio.expected_return() first to initate expected returns")
+        
+        a0,a1,b0,b2,h0,h1 = EMVmodel(self.expected_returns,self.covariance_matrix_df.to_numpy())
+        self.EMV_components = {'a0': a0, 'a1': a1, 'b0': b0, 'b2': b2, 'h0': h0, 'h1': h1}
+        
+        return(self.EMV_components)
+
+    def plot_EMV(self, tstart = 0,thigh = 1, tinc = 0.01):
+        if self.EMV_components is None:
+            self.EMV_components = self.get_EMV_components
+            try:
+                EMVmodelplot(tlow=tstart, thigh= thigh, tinc=tinc, alpha0= self.EMV_components['a0'], alpha1=self.EMV_components['a1'],
+                beta0= self.EMV_components['b0'], beta2= self.EMV_components['b2'])
+            except Exception as e:
+                print("Error has occured: {e}".format(e=e))
+            else:
+                print("Process has completed...")
+        else:
+            try:
+                EMVmodelplot(tlow=tstart, thigh= thigh, tinc=tinc, alpha0= self.EMV_components['a0'], alpha1=self.EMV_components['a1'],
+                beta0= self.EMV_components['b0'], beta2= self.EMV_components['b2'])
+            except Exception as e:
+                print("Error has occured: {e}".format(e=e))
+            else:
+                print("Process has completed...")
+
+    def plot_returns(self, start="2019-01-01", end="2020-01-01"):
+        if self.expected_returns is None:
+            self.expected_return()
+        temp = self.historical.reset_index()
+        fig = go.Figure(data=go.Ohlc(x=temp['Date'],
+                    open=temp['Open'],
+                    high=temp['High'],
+                    low=temp['Low'],
+                    close=temp['Close']))
+        fig.show()
+        del temp
+
+
     def variance_portfolio(self, method = "annually"):
         ## variance portfolio consumes a portfolio class and a str called method and returns the variance of each resepctive 
         ## equity in the portfolio 
         ## variance 
         temp = extract_data(self.equities)
         temp = get_indicators(temp,self.equities)
-        variance = temp.var()
+        variance = temp.var().to_numpy()
         if method == "annually":
             self.variance = variance * 365
         elif method == "daily":
@@ -159,11 +208,32 @@ class Portfolio:
             self.variance = variance * 180
             
         return(self.variance)
+
+    def plot_CML(self, tlow=0,thigh=1, tinc=0.01):
+        if self.EMV_components is None:
+            self.EMV_components = self.get_EMV_components
+            self.expected_return()
+            try:
+                CMLplot(tlow=tlow, thigh= thigh, tinc=tinc, alpha0= self.EMV_components['a0'], alpha1=self.EMV_components['a1'], beta0= self.EMV_components['b0'], beta2= self.EMV_components['b2'],mu = self.expected_returns, Sigma = self.covariance_matrix_df, r = self.risk_free)
+            except Exception as e:
+                print("Error has occured: {e}".format(e=e))
+            else:
+                print("Process has completed...")
+        else:
+            try:
+                CMLplot(tlow=tlow, thigh= thigh, tinc=tinc, alpha0= self.EMV_components['a0'], alpha1=self.EMV_components['a1'],
+                beta0= self.EMV_components['b0'], beta2= self.EMV_components['b2'],mu = 1+ self.expected_returns,Sigma = self.covariance_matrix_df, r= self.risk_free)
+            except Exception as e:
+                print("Error has occured: {e}".format(e=e))
+            else:
+                print("Process has completed...")
+    
 # class equities:
 #     def __init__():
 #         super().__init__(self,nme,notional,equities,risk_free,sharp_ratio, beta)
 
 ################ Ending Prices for each equite.
+
 
 
 
