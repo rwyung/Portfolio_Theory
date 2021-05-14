@@ -6,9 +6,10 @@ import numpy as np
 import csv
 import time
 from scipy import stats
-from finance_help import EMVmodel, EMVmodelplot, CMLplot, checkdata
+from finance_help import EMVmodel, EMVmodelplot, CMLplot, checkdata,sharp_ratios
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
+
 # The Portfolio Optimizer Function attempts to return a .json or python dictionary
 # that pertains to the weigthings to certain assets assuming provided there exists a solution.
 
@@ -62,7 +63,7 @@ def covariance_matrix(df):
     return(covariance_matrix_df)
 
 class Portfolio:
-    def __init__ (self, name, notional, equities, risk_free, sharp_ratio, beta):
+    def __init__ (self, name, notional, equities, risk_free, sharp_ratio, beta, leveraged=False):
         self.name = name
         self.notional = notional
         self.equities = equities
@@ -74,7 +75,8 @@ class Portfolio:
         self.covariance_matrix_df = covariance_matrix(self.indicators)  
         self.expected_returns = None
         self.portfolio_variance = self.indicators.var()
-        self.EMV_components = None
+        self.EMV_components = self.get_EMV_components()
+        self.allocation = None
     #def print(self,i):
     def description(self):
         return f"{self.name} is holding with {self.notional} notional which has a {self.sharp_ratio} sharp ratio."
@@ -83,7 +85,7 @@ class Portfolio:
         return(f"{self.name} portfolio contains {self.equities} which may be risky")
         
     def __str__(self):
-        return(f"{self.name} Portfolio")
+        return(f"{self.name} Portfolio, Holdings: {self.equities}, SR: {self.sharp_ratio}, Beta: {self.beta}")
 
     def add(self,equities):
         if type(self.equities) is list:
@@ -109,6 +111,8 @@ class Portfolio:
         del temp
         return(self.covariance_matrix_df)
 
+    # def __repr__(self) -> str:
+    #     print(f"Portfolio: {self.name}, Holdings: {self.equities}, SR: {self.sharp_ratio}, Beta: {self.beta}")
 
 
     def expected_return(self, method="arthemtic"):
@@ -171,7 +175,8 @@ class Portfolio:
                 print("Process has completed...")
         else:
             try:
-                EMVmodelplot(tlow=tstart, thigh= thigh, tinc=tinc, alpha0= self.EMV_components['a0'], alpha1=self.EMV_components['a1'],
+                EMVmodelplot(tlow=tstart, thigh= thigh, tinc=tinc,
+                 alpha0= self.EMV_components['a0'], alpha1=self.EMV_components['a1'],
                 beta0= self.EMV_components['b0'], beta2= self.EMV_components['b2'])
             except Exception as e:
                 print("Error has occured: {e}".format(e=e))
@@ -228,20 +233,38 @@ class Portfolio:
             else:
                 print("Process has completed...")
     
+    def sharp_port(self):
+        sharp_ratios(alpha0=self.EMV_components['a0'], alpha1=self.EMV_components['a1'], beta0=self.EMV_components['b0'], beta2 =self.EMV_components['b2'],
+            h0=self.EMV_components['h0'],h1=self.EMV_components['h1'], mu=1+self.expected_returns, Sigma=self.covariance_matrix_df.to_numpy())
+        print("Process has complete")
+
+    #### Porto here attempts to solve the convex variance optimization problem
+    #### Based on the course (CO 372) developed by Thomas F Coleman Co 372 
+
+
+
+
+        
+
+
+
+    
+
+       
+
+
+
+
+
+
+
+
 # class equities:
-#     def __init__():
+#     def __init__():exi
 #         super().__init__(self,nme,notional,equities,risk_free,sharp_ratio, beta)
 
 ################ Ending Prices for each equite.
 
-
-
-
-
-
-
-
-#data = yf.Tickers("spce tsla spy")
 
 ### if raw data is desired then we simply use the information provided from the porfolio class #TODO implement class download to .csv
 #data = yf.download("SPCE TSLA NVDA DDOG TD.to", period="2y",prepost=False, interval="1d")
