@@ -28,7 +28,7 @@ class CurveObj:
     
     def __add__(self, OtherCurve):
         # TODO if otherCurve is a constant, then apply parallel shift on curve
-        # If OTher Curve is CurveObj
+        # If OTher Curve is CursveObj
         #   Then:
         #       1.  If Curve is the same length then add parallel
         #       2.  If Curve has different term structure Then add the terms that match
@@ -107,6 +107,21 @@ class CurveObj:
             return(CurveObj(terms=target_terms, rates=vector_of_ForwardRates, name="Forward Curve "+(codeGen(N=6)),type_curve ="Forward Curve"))
         else: 
             return({"Terms": target_terms, "Rates": vector_of_ForwardRates})
+
+    def convert_zero_to_forward(self,copy=False):
+        """
+            convert_zero_to_forward: CurveObj, Bool ->  CurbeObj
+            convert_zero_to_forward helps convert zero  rates into a forward curve
+        """
+
+        if self.type_curve != "zero":
+            return self
+
+        terms = self.terms
+        
+        rates = self.rates
+        
+        
         
     def plotCurve(self):
 
