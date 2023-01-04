@@ -39,7 +39,7 @@ def CustomCashflowPV(Terms,Cashflows,df,freq, *kwargs):
         print("------------------")
         print(freq)
         result = PVCF(Terms, Cashflows, discount_factor,freq)
-        return(result)
+        return(result.sum())
     else:
         return()
 
