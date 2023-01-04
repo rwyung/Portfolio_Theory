@@ -46,7 +46,7 @@ def CustomCashflowPV(Terms,Cashflows,df,freq, *kwargs):
 
 
 
-def swap_val(Principal,Terms, fixed_leg,fltleg,freq,*kwargs):
+def non_amortizing_swap_val(Principal,Terms, fixed_leg,fltleg,df,freq,**kwargs):
     """
         swap_val: double, double, double, listofdoubles, freq, **[Cashflows, prinicpal exchange]
         swap_val consumes Principal amount, list of terms,  fixed leg coupon and list of future float rate forward rates and retursn the PV of the swap
@@ -66,10 +66,34 @@ def swap_val(Principal,Terms, fixed_leg,fltleg,freq,*kwargs):
     if Error:
         return("Error has Occured")
     
+    ## Fixed leg cashflows
+    fixed_CF = Principal * np.array([fixed_leg for _ in range(len(Terms))])
+    
+    ## Float leg cashflows
+    if isinstance(fltleg,(int, float)):
+        float_CF = Principal * np.array([fltleg for _ in range(len(Terms))])
+    elif isinstance(fltleg, list):
+        float_CF = Principal * np.array(fltleg)
     else:
-        fixed_rates = np.array([fixed_leg for _ in range(len(Terms))])
+        float_CF = Principal * fltleg
+
+    output["Fixed"] = fixed_CF
+    output["Float"] = float_CF
+
+    pay_fixed = kwargs["pay_fixed"] if "pay_fixed" in kwargs else True
+    
+    valuation = 0 
+    fixed_result = CustomCashflowPV(Terms,fixed_CF,df,freq)
+    float_result = CustomCashflowPV(Terms,float_CF,df,freq)
+    if pay_fixed:   
+        valuation = fixed_result - float_result
+
+    else:
+        valuation = -(fixed_result - float_result)
+    
+    return(valuation)
+
         
-        
-        output["Fixed"] = Fixed
-        output["Float"] = Float 
+
+
     
