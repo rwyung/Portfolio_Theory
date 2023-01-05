@@ -31,7 +31,7 @@ THis section outlines the time line of the project in which we will later base o
 5. NLP: Pass a report and extract using fuzzy logic to extract key metrics. etc... 
 6. Get the script to also predict future sga, FCFF and rebalance portfolio that way.
 
-### PHASE 3 Machine Learning (DEEP LEARNING Methods) 2022 project
+### PHASE 3 Machine Learning (DEEP LEARNING Methods) 2023 project
 
 1. Extract Tweets from stocktwits and twitter to develope an retail analyst approach.
 2. Time series Predictor
