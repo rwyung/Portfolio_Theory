@@ -2,8 +2,9 @@
 import scipy
 import numpy as np
 from CurveObj import CurveObj
-from bondutils import PVCF, CustomCashflowPV, non_amortizing_swap_val
+from bondutils import *
 import matplotlib.pyplot as plt
+from test_unit import test_equal
 terms_list = [1/365, 5/365, 10/365,1/12,3/12,6/12,9/12,1.,3.,5.,7.,10.,15.,20.,25.,30.]
 rates_list = [0.025, 0.0252,0.02535,0.0255,0.0259, 0.0295, 0.0315,0.0334,0.0318,0.0308, 0.0305,0.0304,0.031, 0.0314,0.0305,0.0301]
 
@@ -59,3 +60,27 @@ r_2 = np.random.normal(0.05, 0.0025, len(term_array))
 df = [0.03 for _ in range(len(term_array))] # indexed to a seperate risk free rat
 test_9 = non_amortizing_swap_val(Principal, term_array, r_1,r_2,df,freq=2)
 print(f"Swap was valued at {test_9:0.2f}")
+
+prinicpal_vector = np.random.normal(10000, 100, len(term_array))
+prepay_vector = np.random.normal(200, 10, len(term_array))
+liquidation = np.random.normal(10, 1, len(term_array))
+
+test_10 = CSFixed_w_Prepay_LIQ(term_array, prinicpal_vector, prepay_vector, liquidation,0.05,"30/360", 2,df, 2)
+test_10_output = test_10["cashflow"]
+print("Present value test 10: " , test_10["Present Value"])
+print(test_10_output.head())
+
+def dee(x):
+    return(2*x+1)
+test_bisect = bisection_search(dee, -2, 2, 0)
+test_bisect_2 = bisection_search(dee,0,2, 0)
+
+print(test_equal("test 11", test_bisect, -0.5))
+print(test_equal("test 12", test_bisect_2, "Method Failed"))
+
+test_13 = CustomFixedDuration(term_array,Cashflows=Cashflow,df=r_1, freq=freq,steps=1e-5)
+test_14 = CustomFixedConvexity(term_array,Cashflows=Cashflow,df=r_1, freq=freq,steps=1e-5)
+print("Duration Custom Cashflow: ", test_13)
+print("Convexity Custom Cashflow: ", test_14)
+
+
